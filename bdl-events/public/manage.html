@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#152b5a">
+  <title>BDL Events</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="bar"><div class="bar-inner"><a class="brand" href="/"><span class="brand-mark">BDL</span><span class="brand-sub">Events</span></a></div></header>
+  <div class="gate">
+    <div class="gate-card" id="card"><p>Loading…</p></div>
+  </div>
+  <script src="/shared.js"></script>
+  <script>
+    (async () => {
+      const K = window.KEG;
+      const card = document.getElementById("card");
+      const q = new URLSearchParams(location.search);
+      const params = { type: q.get("type"), e: q.get("e"), u: q.get("u"), t: q.get("t") };
+      const show = (title, text, button) =>
+        (card.innerHTML = `<h1>${K.esc(title)}</h1><p>${K.esc(text)}</p>${button || ""}`);
+      try {
+        const info = await K.api("/api/manage?" + new URLSearchParams(params));
+        const rsvp = info.type === "rsvp";
+        show(
+          rsvp ? "Cancel your RSVP?" : "Stop updates?",
+          rsvp ? `You're on the list for ${info.title}.` : `You're getting updates about ${info.title}.`,
+          `<button class="btn btn-primary" id="go" type="button">${rsvp ? "Cancel my RSVP" : "Stop updates"}</button>
+           <p style="margin-top:16px"><a href="/">Back to the calendar</a></p>`
+        );
+        document.getElementById("go").addEventListener("click", async (ev) => {
+          ev.target.disabled = true;
+          try {
+            await K.api("/api/manage", { method: "POST", body: params });
+            show(rsvp ? "Your RSVP is cancelled" : "Updates are off",
+              rsvp ? `We've taken you off the list for ${info.title}.` : `You won't get more updates about ${info.title}.`,
+              `<a class="btn btn-secondary" href="/">Back to the calendar</a>`);
+          } catch (e) {
+            show("That didn't work", e.message, `<a class="btn btn-secondary" href="/">Back to the calendar</a>`);
+          }
+        });
+      } catch (e) {
+        show("Nothing to change", e.message, `<a class="btn btn-secondary" href="/">Back to the calendar</a>`);
+      }
+    })();
+  </script>
+</body>
+</html>
