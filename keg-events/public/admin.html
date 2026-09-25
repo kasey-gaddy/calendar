@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0D1F3C">
+  <title>Manage events | KE&amp;G Events</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-inner">
+      <a class="brand" href="/admin.html"><span class="brand-mark">KE&amp;G</span><span class="brand-sub">Manage events</span></a>
+      <nav class="bar-actions">
+        <a class="btn-bar" href="/" target="_blank" rel="noopener">View calendar</a>
+        <button class="btn-bar" id="signOut" type="button" hidden>Sign out</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="gate" id="login" hidden>
+    <form class="gate-card form" id="loginForm">
+      <h1>Manage events</h1>
+      <p>Sign in to post and edit events.</p>
+      <div class="field"><label for="pw">Admin password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <p class="error" id="loginError" hidden></p>
+      <div><button class="btn btn-primary" type="submit">Sign in</button></div>
+    </form>
+  </div>
+
+  <main class="wrap" id="app" hidden>
+    <div id="warnings"></div>
+    <div class="admin">
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>Events</h2>
+          <button class="btn btn-primary" id="newBtn" type="button">New event</button>
+        </div>
+        <div class="panel-body" style="padding:10px 16px">
+          <div class="seg" role="group" aria-label="Show">
+            <button id="tabUp" type="button" aria-pressed="true">Upcoming</button>
+            <button id="tabPast" type="button" aria-pressed="false">Past</button>
+          </div>
+        </div>
+        <ul class="elist" id="elist"></ul>
+      </aside>
+      <div>
+        <section class="panel" id="editor"></section>
+        <section class="panel" id="people" hidden></section>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/shared.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>
