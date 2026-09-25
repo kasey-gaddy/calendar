@@ -14,13 +14,29 @@ export async function saveRoster(roster) {
 export const normName = (s) =>
   String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 
-export function normCompany(s) {
+export const DEFAULT_COMPANIES = ["KE&G", "Maddux", "BDL"];
+
+// The admin-managed company list. Falls back to the three BDL companies.
+export async function getCompanies() {
+  const list = await store("settings").get("companies", { type: "json" });
+  return Array.isArray(list) && list.length ? list : DEFAULT_COMPANIES;
+}
+export async function saveCompanies(list) {
+  await store("settings").setJSON("companies", list);
+}
+
+// Matches a spreadsheet value to a company on the list, ignoring case and
+// punctuation, so "KE&G Construction" or "maddux & sons" land on the right one.
+export function normCompany(s, list = DEFAULT_COMPANIES) {
   const raw = String(s || "").trim();
-  const n = raw.toLowerCase().replace(/[^a-z]/g, "");
+  const n = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!n) return "";
-  if (n.startsWith("keg")) return "KE&G";
-  if (n.startsWith("maddux")) return "Maddux";
-  if (n === "bdl" || n.startsWith("bluediamond")) return "BDL";
+  const key = (c) => c.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const exact = list.find((c) => key(c) === n);
+  if (exact) return exact;
+  const prefix = list.find((c) => key(c) && n.startsWith(key(c)));
+  if (prefix) return prefix;
+  if (n === "bdl" || n.startsWith("bluediamond")) return list.find((c) => key(c) === "bdl") || "BDL";
   return raw.slice(0, 40);
 }
 

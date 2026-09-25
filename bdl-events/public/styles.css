@@ -242,3 +242,51 @@ td .btn { min-height: 34px; padding: 0 12px; font-size: 13px; }
 .result ul { margin: 8px 0 0; padding-left: 18px; font-weight: 400; color: var(--navy); }
 .toolbar .check { align-items: center; }
 .toolbar .check input { margin: 0; }
+
+/* Phone-friendly details */
+input, select, textarea { font-size: 16px; } /* 16px stops iPhone from zooming in on tap */
+.warn summary { cursor: pointer; font-weight: 600; }
+.warn ul { margin: 8px 0 0; padding-left: 18px; }
+.warn li + li { margin-top: 4px; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px)); }
+  .panel-head { padding: 12px 14px; }
+  .panel-body { padding: 14px 14px 18px; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .tabs button { flex: 1; white-space: nowrap; }
+  .toolbar > * { flex: 1 1 140px; }
+  .toolbar input[type=search] { flex-basis: 100%; }
+  .stat { gap: 14px 20px; }
+  .stat > div { flex: 1 1 40%; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .actions .btn, .actions .btnrow .btn { width: 100%; }
+  .actions .btnrow { flex-wrap: nowrap; }
+  .actions .btnrow .btn { flex: 1; }
+  .picker-foot .btnrow { width: 100%; }
+  .picker-foot .btnrow .btn { flex: 1; }
+  .scroll { max-height: none; border: 0; }
+  table.cards thead { display: none; }
+  table.cards, table.cards tbody, table.cards tr, table.cards td { display: block; width: 100%; }
+  table.cards tr { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; background: var(--paper); }
+  table.cards td { border: 0; padding: 3px 0; white-space: normal; display: flex; gap: 12px; justify-content: space-between; text-align: right; }
+  table.cards td::before { content: attr(data-label); font-weight: 600; color: var(--muted); font-size: 13px; flex: none; text-align: left; }
+  table.cards td:first-child { font-weight: 700; font-size: 16px; text-align: left; padding-bottom: 6px; }
+  table.cards td:first-child::before, table.cards td[data-label=""]::before { content: none; }
+  table.cards td[data-label=""] { justify-content: flex-start; padding-top: 8px; }
+  table.cards tr.off { opacity: .7; }
+}
+
+/* Employee header menu (phones only) */
+.menu-btn { display: none; }
+.menu-list { display: grid; gap: 10px; }
+.menu-list .btn { width: 100%; justify-content: flex-start; }
+@media (max-width: 640px) {
+  .bar-inner { flex-wrap: nowrap; }
+  .bar-actions .btn-bar, .bar-actions .who { display: none; }
+  .bar-actions .menu-btn { display: inline-flex; }
+  .head { gap: 12px; }
+  .controls { width: 100%; justify-content: space-between; }
+  .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; margin-right: -14px; padding-right: 14px; }
+  .chip { flex: none; }
+}

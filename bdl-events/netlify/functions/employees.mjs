@@ -1,13 +1,13 @@
 // Admin roster management: bulk upload, edit one, remove one, list all.
 import { json, err, isAdmin, empKey, readBody, normPhone, validEmail } from "../lib/util.mjs";
-import { getRoster, saveRoster, normCompany, ensureFeedToken } from "../lib/people.mjs";
+import { getRoster, saveRoster, normCompany, ensureFeedToken, getCompanies } from "../lib/people.mjs";
 
 const FIELDS = ["first", "last", "preferred", "company", "email", "phone", "division", "office"];
 
-function cleanRow(r) {
+function cleanRow(r, list) {
   const out = {};
   for (const f of FIELDS) out[f] = String(r[f] ?? "").trim().slice(0, 80);
-  out.company = normCompany(out.company);
+  out.company = normCompany(out.company, list);
   out.email = validEmail(out.email) ? out.email.toLowerCase() : "";
   out.phone = normPhone(out.phone) || "";
   return out;
@@ -15,7 +15,7 @@ function cleanRow(r) {
 
 export default async (req) => {
   if (!isAdmin(req)) return err("Sign in as an admin.", 401);
-  const roster = await getRoster();
+  const [roster, list] = await Promise.all([getRoster(), getCompanies()]);
   const now = new Date().toISOString();
 
   if (req.method === "GET") {
@@ -39,8 +39,8 @@ export default async (req) => {
       if (!key) return result.skipped.push({ row: rowNum, reason: "Missing or invalid employee ID" });
       if (seen.has(key)) return result.skipped.push({ row: rowNum, reason: `Employee ID ${raw.id} appears more than once in the file` });
       seen.add(key);
-      const row = cleanRow(raw);
-      if (b.defaultCompany && !row.company) row.company = normCompany(b.defaultCompany);
+      const row = cleanRow(raw, list);
+      if (b.defaultCompany && !row.company) row.company = normCompany(b.defaultCompany, list);
       const old = roster[key];
       if (!old) {
         if (!row.first || !row.last) return result.skipped.push({ row: rowNum, reason: "Missing first or last name" });
@@ -68,7 +68,7 @@ export default async (req) => {
   if (req.method === "PUT") {
     const key = empKey(b?.id);
     if (!key) return err("Enter an employee ID.");
-    const row = cleanRow(b);
+    const row = cleanRow(b, list);
     if (!row.first || !row.last) return err("Enter a first and last name.");
     if (b.email && !row.email) return err("That email address isn't valid.");
     if (b.phone && !row.phone) return err("Enter the mobile number as 10 digits.");

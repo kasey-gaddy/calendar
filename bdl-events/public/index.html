@@ -20,6 +20,7 @@
         <button class="btn-bar" id="btnFeed" type="button">Add all events to my calendar</button>
         <button class="btn-bar" id="btnFollow" type="button">Get updates</button>
         <button class="btn-bar" id="btnSignOut" type="button">Sign out</button>
+        <button class="btn-bar menu-btn" id="btnMenu" type="button" aria-haspopup="dialog">Menu</button>
       </nav>
     </div>
   </header>
@@ -28,13 +29,13 @@
     <form class="gate-card form" id="gateForm">
       <h1>BDL Events</h1>
       <p>Sign in with your name and employee ID to see events for you.</p>
-      <div class="field">
-        <label for="gateId">Employee ID</label>
-        <input id="gateId" name="employeeId" autocomplete="off" autocapitalize="off" inputmode="text" required>
-      </div>
       <div class="form-2">
         <div class="field"><label for="gateFirst">First name</label><input id="gateFirst" name="first" autocomplete="given-name" required></div>
         <div class="field"><label for="gateLast">Last name</label><input id="gateLast" name="last" autocomplete="family-name" required></div>
+      </div>
+      <div class="field">
+        <label for="gateId">Employee ID</label>
+        <input id="gateId" name="employeeId" autocomplete="off" autocapitalize="off" inputmode="text" required>
       </div>
       <p class="error" id="gateError" hidden></p>
       <div><button class="btn btn-primary" type="submit">Sign in</button></div>

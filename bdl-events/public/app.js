@@ -62,7 +62,7 @@
     const e = $("#gateError");
     e.textContent = message || "";
     e.hidden = !message;
-    $("#gateId").focus();
+    $("#gateFirst").focus();
   }
 
   $("#gateForm").addEventListener("submit", async (e) => {
@@ -462,6 +462,24 @@
     }
   }
 
+  async function signOut() {
+    try { await K.api("/api/auth", { method: "DELETE" }); } catch {}
+    K.local.del("bdlSession");
+    location.href = "/";
+  }
+
+  // Phones get one Menu button instead of a crowded header.
+  function openMenu() {
+    showDialog(
+      head(`${me().first || ""} ${me().last || ""}`.trim() || "Menu") +
+        `<div class="dlg-main"><div class="menu-list">
+          <button class="btn btn-secondary" type="button" data-act="menu-feed">Add all events to my calendar</button>
+          <button class="btn btn-secondary" type="button" data-act="menu-follow">${me().followingAll ? "Updates for all events are on" : "Get updates for all events"}</button>
+          <button class="btn btn-secondary" type="button" data-act="menu-signout">Sign out</button>
+        </div></div>`
+    );
+  }
+
   // ── Events ────────────────────────────────────────────────────────────────
   function bind() {
     if (state.bound) return;
@@ -484,11 +502,8 @@
     });
     $("#btnFeed").addEventListener("click", openFeed);
     $("#btnFollow").addEventListener("click", openFollowAll);
-    $("#btnSignOut").addEventListener("click", async () => {
-      try { await K.api("/api/auth", { method: "DELETE" }); } catch {}
-      K.local.del("bdlSession");
-      location.href = "/";
-    });
+    $("#btnSignOut").addEventListener("click", signOut);
+    $("#btnMenu").addEventListener("click", openMenu);
 
     $("#view").addEventListener("click", (e) => {
       if (e.target.closest('[data-act="next-month"]')) return shiftMonth(1);
@@ -532,6 +547,12 @@
           K.toast("Updates are off.");
           refreshAndReopen(id);
         }
+      } else if (act === "menu-feed") {
+        openFeed();
+      } else if (act === "menu-follow") {
+        openFollowAll();
+      } else if (act === "menu-signout") {
+        signOut();
       } else if (act === "stop-all") {
         if (await undo("/api/subscribe?eventId=_all")) {
           state.me.followingAll = false;

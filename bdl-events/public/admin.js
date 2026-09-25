@@ -14,7 +14,7 @@
     people: null,
     upload: null,
   };
-  const DEFAULT_COMPANIES = ["KE&G", "Maddux", "BDL"];
+  let companyList = ["KE&G", "Maddux", "BDL"];
   const dlg = $("#dlg");
   const dlgBody = $("#dlgBody");
 
@@ -24,10 +24,27 @@
     return /^[A-Z0-9_-]{1,40}$/.test(s) ? s : "";
   };
   const nameOf = (e) => [e.preferred || e.first, e.last].filter(Boolean).join(" ");
-  const companies = () => [...new Set([...DEFAULT_COMPANIES, ...S.roster.map((e) => e.company).filter(Boolean)])];
+  // The managed list first, then any company that only shows up on the roster.
+  const companies = () => [...new Set([...companyList, ...S.roster.map((e) => e.company).filter(Boolean)])];
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const dateOnly = (iso) => (iso ? K.fmtDate(K.azDate(Date.parse(iso)), false) : "");
   const showPhone = (p) => (p && p.startsWith("+1") && p.length === 12 ? `${p.slice(2, 5)}-${p.slice(5, 8)}-${p.slice(8)}` : p || "");
+
+  // On phones, wide tables turn into stacked cards. Each cell gets its column
+  // heading as a label so the card still reads clearly.
+  function labelTable(box) {
+    const t = box.querySelector("table");
+    if (!t) return;
+    t.classList.add("cards");
+    const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+    t.querySelectorAll("tbody tr").forEach((tr) =>
+      [...tr.children].forEach((td, i) => {
+        td.setAttribute("data-label", heads[i] || "");
+        // Keep each cell's content together so it stays on one side of the card.
+        if (!td.querySelector(":scope > .v")) td.innerHTML = `<span class="v">${td.innerHTML}</span>`;
+      })
+    );
+  }
 
   // ── Sign in ───────────────────────────────────────────────────────────────
   async function boot() {
@@ -44,9 +61,11 @@
     $("#signOut").hidden = false;
     renderWarnings();
     bind();
+    await loadCompanies();
     await Promise.all([loadEvents(), loadRoster()]);
     edit(null);
     renderUpload();
+    renderCompanies();
   }
 
   function showLogin(msg) {
@@ -73,13 +92,18 @@
     if (!S.cfg.emailReady) w.push("Email isn't set up yet, so no emails will go out. Add the Microsoft Graph settings in Netlify to turn it on.");
     if (!S.cfg.smsReady) w.push("Texting isn't set up yet, so no texts will go out. Add the Azure Communication Services settings in Netlify to turn it on.");
     if (!window.XLSX) w.push("The spreadsheet tool didn't load, so uploads and Excel downloads won't work. Reload the page to try again.");
-    $("#warnings").innerHTML = w.map((t) => `<div class="warn">${K.esc(t)}</div>`).join("");
+    $("#warnings").innerHTML = w.length
+      ? `<details class="warn"><summary>${w.length === 1 ? "1 thing needs setting up" : `${w.length} things need setting up`}</summary><ul>${w.map((t) => `<li>${K.esc(t)}</li>`).join("")}</ul></details>`
+      : "";
   }
 
   function switchTab(name) {
     document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
     for (const t of ["events", "employees", "reports"]) $(`#tab-${t}`).hidden = t !== name;
-    if (name === "employees") renderRoster();
+    if (name === "employees") {
+      renderRoster();
+      renderCompanies();
+    }
     if (name === "reports") loadSummary();
   }
 
@@ -482,6 +506,7 @@
           )
           .join("")}</tbody></table>`
       : `<p class="fine" style="padding:14px">No one in this view yet.</p>`;
+    labelTable($("#pTable"));
   }
 
   const rsvpRows = () =>
@@ -552,6 +577,7 @@
           )
           .join("")}</tbody></table>`
       : `<p class="fine" style="padding:14px">${S.roster.length ? "No one matches." : "No employees yet. Upload a spreadsheet above, or choose Add employee."}</p>`;
+    labelTable($("#rosterTable"));
   }
 
   function editEmployee(emp) {
@@ -561,11 +587,11 @@
     dlgBody.innerHTML = `
       <div class="dlg-head"><h2 id="dlgTitle">${isNew ? "Add employee" : `Edit ${K.esc(nameOf(e))}`}</h2><button class="x" type="button" data-close aria-label="Close">×</button></div>
       <form class="dlg-main form" id="empForm" novalidate>
-        ${f("id", "Employee ID", e.id, isNew ? "required" : "readonly")}
-        ${isNew ? "" : `<span class="hint" style="margin-top:-8px">To change an ID, remove this person and add them again.</span>`}
         <div class="form-2">${f("first", "First name", e.first, "required")}${f("last", "Last name", e.last, "required")}</div>
         ${field("e-preferred", "Preferred name", `<input id="e-preferred" name="preferred" value="${K.esc(e.preferred || "")}">`, "Optional. They can sign in with this or their first name.")}
-        ${field("e-company", "Company", `<input id="e-company" name="company" list="coList" value="${K.esc(e.company || "")}"><datalist id="coList">${companies().map((c) => `<option value="${K.esc(c)}">`).join("")}</datalist>`)}
+        ${f("id", "Employee ID", e.id, isNew ? "required" : "readonly")}
+        ${isNew ? "" : `<span class="hint" style="margin-top:-8px">To change an ID, remove this person and add them again.</span>`}
+        ${field("e-company", "Company", `<select id="e-company" name="company"><option value="">Choose a company</option>${companies().map((c) => `<option${c === e.company ? " selected" : ""}>${K.esc(c)}</option>`).join("")}</select>`, "Add companies in the Companies section on the Employees tab.")}
         <div class="form-2">${f("division", "Division", e.division)}${f("office", "Office", e.office)}</div>
         <div class="form-2">${f("email", "Email", e.email, 'type="email"')}${f("phone", "Mobile", showPhone(e.phone), 'type="tel"')}</div>
         <label class="check"><input type="checkbox" name="active"${e.active !== false ? " checked" : ""}><span>Can sign in and see events</span></label>
@@ -584,6 +610,7 @@
         K.toast(isNew ? "Employee added." : "Changes saved.");
         await loadRoster();
         renderRoster();
+        renderCompanies();
       } catch (e2) {
         errEl.textContent = e2.message;
         errEl.hidden = false;
@@ -599,8 +626,69 @@
       K.toast("Employee removed.");
       await loadRoster();
       renderRoster();
+      renderCompanies();
     } catch (err) {
       K.toast(err.message);
+    }
+  }
+
+  // ── Companies ─────────────────────────────────────────────────────────────
+  async function loadCompanies() {
+    try {
+      const list = (await A("/api/companies")).companies;
+      if (list?.length) companyList = list;
+    } catch {}
+  }
+
+  function renderCompanies() {
+    const box = $("#companies");
+    const count = (c) => S.roster.filter((e) => e.company === c).length;
+    const extra = [...new Set(S.roster.map((e) => e.company).filter((c) => c && !companyList.includes(c)))];
+    box.innerHTML = `
+      <p class="fine" style="margin:0 0 12px">These appear in every company dropdown, in uploads, and in "Who can see it" on events.</p>
+      <div class="table-wrap"><table><thead><tr><th>Company</th><th>Employees</th><th></th></tr></thead><tbody>
+        ${companyList.map((c) => `<tr><td>${K.esc(c)}</td><td>${count(c)}</td><td><button class="btn btn-danger" type="button" data-co-remove="${K.esc(c)}">Remove</button></td></tr>`).join("")}
+      </tbody></table></div>
+      ${extra.length ? `<p class="warn" style="margin:12px 0 0">Some employees have a company that isn't on this list: ${extra.map((c) => `${K.esc(c)} (${count(c)})`).join(", ")}. Add it here, or edit those employees.</p>` : ""}
+      <form class="toolbar" id="coForm" style="margin:14px 0 0">
+        <input id="coName" placeholder="Company name" maxlength="40" aria-label="New company name" style="flex:1;min-width:200px">
+        <button class="btn btn-primary" type="submit">Add company</button>
+      </form>
+      <p class="error" id="coError" hidden></p>`;
+    $("#coForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = $("#coName").value.trim();
+      if (!name) return;
+      const key = (c) => c.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const dup = companyList.find((c) => key(c) === key(name));
+      if (dup) {
+        const el = $("#coError");
+        el.textContent = `${dup} is already on the list.`;
+        el.hidden = false;
+        return;
+      }
+      saveCompanyList([...companyList, name], `${name} added.`);
+    });
+    box.querySelectorAll("[data-co-remove]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const c = b.dataset.coRemove;
+        if (confirm(`Remove ${c} from the company list?`)) saveCompanyList(companyList.filter((x) => x !== c), `${c} removed.`);
+      })
+    );
+  }
+
+  async function saveCompanyList(next, msg) {
+    try {
+      companyList = (await A("/api/companies", { method: "PUT", body: { companies: next } })).companies;
+      K.toast(msg);
+      await loadRoster();
+      renderCompanies();
+      renderRoster();
+      if (!S.upload?.result) renderUpload();
+    } catch (e) {
+      const el = $("#coError");
+      el.textContent = e.message;
+      el.hidden = false;
     }
   }
 
@@ -627,7 +715,7 @@
         <div class="drop" id="drop">
           <p style="margin:0 0 12px">Drop an Excel or CSV file here, or choose one.</p>
           <label class="btn btn-primary" style="display:inline-flex">Choose file<input type="file" id="file" accept=".xlsx,.xls,.csv" hidden></label>
-          <p class="fine" style="margin-top:12px">Needs employee ID and name columns. Company, preferred name, email, mobile, division, and office are optional. People already on the roster get updated. Nobody missing from the file is changed.</p>
+          <p class="fine" style="margin-top:12px">Needs name and employee ID columns. Company, preferred name, email, mobile, division, and office are optional. People already on the roster get updated. Nobody missing from the file is changed.</p>
         </div>`;
       const drop = $("#drop");
       $("#file").addEventListener("change", (e) => e.target.files[0] && readUpload(e.target.files[0]));
@@ -661,7 +749,7 @@
       <div class="table-wrap"><table><thead><tr><th>Row</th><th>ID</th><th>First</th><th>Last</th><th>Preferred</th><th>Company</th><th>Email</th><th>Mobile</th><th>Division</th><th>Office</th></tr></thead><tbody>
         ${mapped.slice(0, 5).map((r) => `<tr><td>${r.rowNumber}</td>${["id", "first", "last", "preferred", "company", "email", "phone", "division", "office"].map((k) => `<td>${K.esc(r[k] || (k === "company" ? u.defaultCompany : ""))}</td>`).join("")}</tr>`).join("")}
       </tbody></table></div>
-      <p class="${ready ? "fine" : "error"}" style="margin:12px 0">${ready ? `${plural(ready, "row is", "rows are")} ready.${mapped.length - ready ? ` ${mapped.length - ready} missing an ID or name will be skipped.` : ""}` : "No rows have an employee ID and a name yet. Check the column choices above."}</p>
+      <p class="${ready ? "fine" : "error"}" style="margin:12px 0">${ready ? `${plural(ready, "row is", "rows are")} ready.${mapped.length - ready ? ` ${mapped.length - ready} missing a name or ID will be skipped.` : ""}` : "No rows have a name and an employee ID yet. Check the column choices above."}</p>
       <div class="btnrow"><button class="btn btn-primary" type="button" id="upGo"${ready ? "" : " disabled"}>Import ${plural(ready, "employee", "employees")}</button><button class="btn btn-secondary" type="button" id="upCancel">Choose a different file</button></div>`;
     box.querySelectorAll("[data-map]").forEach((s) =>
       s.addEventListener("change", () => { u.map[s.dataset.map] = s.value === "" ? undefined : +s.value; renderUpload(); })
@@ -726,9 +814,10 @@
     try {
       const result = await A("/api/employees", { method: "POST", body: { rows: mapRows(), defaultCompany: S.upload.defaultCompany } });
       S.upload.result = result;
-      await loadRoster();
+      await Promise.all([loadRoster(), loadCompanies()]);
       renderUpload();
       renderRoster();
+      renderCompanies();
     } catch (e) {
       K.toast(e.message);
       btn.disabled = false;
@@ -759,6 +848,7 @@
           )
           .join("")}</tbody></table></div><p class="fine" style="margin-top:10px">Choose an event to see who viewed, RSVP'd, and added it.</p>`
       : `<p class="fine">No events yet.</p>`;
+    labelTable($("#summary"));
   }
   const summaryRows = () =>
     summary.map((r) => ({
@@ -803,7 +893,7 @@
         {
           name: "Employees",
           rows: S.roster.map((e) => ({
-            "Employee ID": e.id, "First name": e.first, "Last name": e.last, "Preferred name": e.preferred || "",
+            "First name": e.first, "Last name": e.last, "Preferred name": e.preferred || "", "Employee ID": e.id,
             Company: e.company, Division: e.division, Office: e.office, Email: e.email, Mobile: showPhone(e.phone),
             Access: e.active === false ? "Turned off" : "Can sign in",
           })),
