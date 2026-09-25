@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#152b5a">
+  <title>BDL Events</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-inner">
+      <a class="brand" href="/"><span class="brand-mark">BDL</span><span class="brand-sub">Events</span></a>
+      <nav class="bar-actions" id="barActions" hidden>
+        <span class="who" id="who"></span>
+        <button class="btn-bar" id="btnFeed" type="button">Add all events to my calendar</button>
+        <button class="btn-bar" id="btnFollow" type="button">Get updates</button>
+        <button class="btn-bar" id="btnSignOut" type="button">Sign out</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="gate" id="gate" hidden>
+    <form class="gate-card form" id="gateForm">
+      <h1>BDL Events</h1>
+      <p>Sign in with your name and employee ID to see events for you.</p>
+      <div class="field">
+        <label for="gateId">Employee ID</label>
+        <input id="gateId" name="employeeId" autocomplete="off" autocapitalize="off" inputmode="text" required>
+      </div>
+      <div class="form-2">
+        <div class="field"><label for="gateFirst">First name</label><input id="gateFirst" name="first" autocomplete="given-name" required></div>
+        <div class="field"><label for="gateLast">Last name</label><input id="gateLast" name="last" autocomplete="family-name" required></div>
+      </div>
+      <p class="error" id="gateError" hidden></p>
+      <div><button class="btn btn-primary" type="submit">Sign in</button></div>
+      <p class="fine">Use your name the way it appears with HR. Can't sign in? Check with HR.</p>
+      <p class="tagline">Do the Work. Own the Outcome.</p>
+    </form>
+  </div>
+
+  <main class="wrap" id="app" hidden>
+    <section class="head">
+      <h1 class="month"><span id="monthName"></span><span class="year" id="yearName"></span></h1>
+      <div class="controls">
+        <div class="nav">
+          <button class="icon-btn" id="prev" type="button" aria-label="Previous month">‹</button>
+          <button class="btn-ghost" id="today" type="button">Today</button>
+          <button class="icon-btn" id="next" type="button" aria-label="Next month">›</button>
+        </div>
+        <div class="seg" role="group" aria-label="View">
+          <button id="vList" type="button" aria-pressed="false">List</button>
+          <button id="vMonth" type="button" aria-pressed="false">Month</button>
+        </div>
+      </div>
+    </section>
+    <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+    <section id="view" aria-live="polite"></section>
+  </main>
+
+  <dialog id="dlg" aria-labelledby="dlgTitle"><div id="dlgBody"></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/shared.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
